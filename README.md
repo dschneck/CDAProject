@@ -2,6 +2,11 @@
 Final Project for CDA
 Due Date - April 19th 2020 at 11:59 PM
 
+Thought this might be useful:
+https://www.cprogramming.com/tutorial/bitwise_operators.html
+It gives some examples of how to manipulate bitsIt gives some examples of how to manipulate bits 
+
+
 David:
 	> Instruction fetch	 10pts
 	> Instruction partition	 10pts

@@ -12,7 +12,15 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
+    if (((PC >> 2) + 31) > (65536 >> 2)) // Checking if new PC goes out of bounds
+        return 1;
 
+    else {
+        instruction = &(Mem[PC >> 2]); // instruction now points to next instruction word
+        return 0;
+    }
+    
+    
 }
 
 
@@ -20,7 +28,16 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 /* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
+    unsigned * tmp = &instruction; // Getting the address so I can use
+                                   // pointer arithmetic to assign addresses
 
+    op = tmp + 0;
+    r1 = tmp + 7;
+    r2 = tmp + 12;
+    r3 = tmp + 17;
+    funct = tmp + 5;
+    offset = tmp + 17;
+    jsec = tmp + 7;
 }
 
 
