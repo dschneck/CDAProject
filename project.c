@@ -5,7 +5,28 @@
 /* 10 Points */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
-
+    int Z = 0;
+    
+    if(ALUControl == '0')   Z = A + B;              // Addition
+    if(ALUControl == '1')   Z = A - B;              // Subtraction
+    if(ALUControl == '2' || ALUControl == '3')      // Set on less than (options 2 or 3)
+    {
+        if(A < B)   Z = 1;
+        else        Z = 0;
+    }
+    if(ALUControl == '4')   Z = A && B;             // And
+    if(ALUControl == '5')   Z = A || B;             // Or
+    if(ALUControl == '6')   Z = B << 16;            // Bitshift 16 times
+    if(ALUControl == '7')   Z = !A;                 // Not A
+    
+    
+    if(Z == 0)              // If result is 0, assign 1 to Zero
+        *Zero = '1';
+    else
+        *Zero = '0';
+    
+    *ALUresult = Z;         // Output result to ALUresult
+    
 }
 
 /* instruction fetch */
@@ -68,7 +89,34 @@ void sign_extend(unsigned offset,unsigned *extended_value)
 /* 10 Points */
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
-
+    char control;
+    unsigned val2;
+                                           
+         if(funct == 000) control = '0';        // Check what operation based on funct
+    else if(funct == 001) control = '1';
+    else if(funct == 010) control = '2';
+    else if(funct == 011) control = '3';
+    else if(funct == 100) control = '4';
+    else if(funct == 101) control = '5';
+    else if(funct == 110) control = '6';
+    else if(funct == 111) control = '7';
+    else return 1;                              // Halt, invalid instruction
+    
+    
+    // Determine what parameters to use
+    if(ALUSrc == 'R')
+        val2 = data2;                   // R-Types, pass data2
+        
+    else if(ALUSrc == 'I')
+        val2 = extended_value;          // I-Types, pass extended_val
+    
+    else
+        return 1;                       // Halt, invalid instruction
+    
+    
+    ALU(data1, val2, control, ALUresult, Zero);     // Call ALU
+    return 0;                                       // No halt condition
+    
 }
 
 /* Read / Write Memory */
