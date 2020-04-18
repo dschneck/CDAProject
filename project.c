@@ -33,7 +33,8 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
-    if (((PC >> 2) + 31) > (65536 >> 2)) // Checking if new PC goes out of bounds
+    if ( Mem[PC] % 4 == 0 && ((PC >> 2) + 31) < (65536 >> 2) == 0) // Checking if it is word aligned 
+                                                                   // and if new PC goes out of bounds  PC % 4 == 0 for word alignment
         return 1;
 
     else {
@@ -49,9 +50,24 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 /* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
-    unsigned * tmp = &instruction; // Getting the address so I can use
-                                   // pointer arithmetic to assign addresses
+    // NOT DONE YET
+    unsigned * tmp = &instruction; // Getting the address 
 
+
+    *op = tmp[0] >> 2; 
+    *r1 = (tmp[0] << 6) + (tmp[1] >> 5);
+    *r2 = tmp + 12;
+    *r3 = tmp + 17;
+    *funct = (tmp[3] << 2) >> 2;
+    *offset = (tmp[2] << 8) + tmp[3];
+    *jsec = ( tmp[2])+ tmp[3];
+
+
+
+
+
+    /* I think my understanding of the memory representation
+    was wrong
     op = tmp + 0;
     r1 = tmp + 7;
     r2 = tmp + 12;
@@ -59,6 +75,7 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
     funct = tmp + 5;
     offset = tmp + 17;
     jsec = tmp + 7;
+    */
 }
 
 
@@ -74,7 +91,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 /* 5 Points */
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-
+      
 }
 
 
@@ -82,7 +99,24 @@ void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigne
 /* 10 Points */
 void sign_extend(unsigned offset,unsigned *extended_value)
 {
+    //int sign = offset & (-offset); // 
 
+    *extended_value = 0;
+
+    if (offset & (1 << 16)) { //checks if the 16th bit is a 1
+        for (int i = 16; i < 32 ; i++) {
+            *extended_value = (offset & (1 << i)); // change leftmost 16 bits to 1
+        }
+        
+        for (int i = 0; i < 16; i++) {
+            *extended_value = (offset | (1 << i)); // copy rightmost 16 bits to the values in offset
+        }
+    }
+
+    else {
+        *extended_value = offset; // exact copy
+    }
+    
 }
 
 /* ALU operations */
