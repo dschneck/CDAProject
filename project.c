@@ -1,5 +1,8 @@
 #include "spimcore.h"
 
+// Extra functions
+int addBits(unsigned * byte);
+void assignControl(struct_controls *controls, char Aop, char Asrc, char bra, char jum, char memW, char memR, char memTR, char regD, char regW);
 
 /* ALU */
 /* 10 Points */
@@ -33,27 +36,40 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
-    if ( Mem[PC] % 4 == 0 && ((PC >> 2) + 31) < (65536 >> 2) == 0) // Checking if it is word aligned 
+    if ( Mem[PC] % 4 == 0 && ((PC >> 2) + 31) < (65536 >> 2)) { // Checking if it is word aligned 
                                                                    // and if new PC goes out of bounds  PC % 4 == 0 for word alignment
-        return 1;
-
-    else {
         instruction = &(Mem[PC >> 2]); // instruction now points to next instruction word
         return 0;
+    }
+
+    else {
+        return 1;
     }
     
     
 }
 
+int addBits(unsigned  * byte) {
+    int num_bits, sum = 0;
+    num_bits = sizeof(unsigned) * 8;
+
+    for (int i = 0; i < num_bits; i++) {
+        if (*byte & 1 << i) {
+            sum += 2 << i;
+        }
+    }
+
+    return sum;
+}
 
 /* instruction partition */
 /* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
-    // NOT DONE YET
+    // Still WIP
     unsigned * tmp = &instruction; // Getting the address 
 
-
+    /* Second attempt, might be right for a few but might be overly complicated */
     *op = tmp[0] >> 2; 
     *r1 = (tmp[0] << 6) + (tmp[1] >> 5);
     *r2 = tmp + 12;
@@ -61,10 +77,7 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
     *funct = (tmp[3] << 2) >> 2;
     *offset = (tmp[2] << 8) + tmp[3];
     *jsec = ( tmp[2])+ tmp[3];
-
-
-
-
+    
 
     /* I think my understanding of the memory representation
     was wrong
@@ -78,28 +91,71 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
     */
 }
 
+void assignControl(struct_controls *controls, char Aop, char Asrc, char bra, char jum, char memR, char memW, char memTR, char regD, char regW) {
+    controls->ALUOp = Aop;
+    controls->ALUSrc = Asrc;
+    controls->Branch = bra;
+    controls->Jump = jum;
+    controls->MemRead = memR;
+    controls->MemWrite = memW;
+    controls->MemtoReg = memTR;
+    controls->RegDst = regD;
+    controls->RegWrite = regW;
+}
 
 
 /* instruction decode */
 /* 15 Points */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
-
+    switch(op) { // 
+        case 0: // R-type instruction
+            assignControl(controls, 0, 7, 0, 0, 0, 0, 0, 0, 1);
+            break;
+        case 8: // add immediate
+            assignControl(controls, 0, 1, 0, 0, 0, 0, 0, 0, 1);
+            break;
+        case 35: // load word
+            assignControl(controls, 0, 1, 0, 0, 1, 1, 1, 0, 1);
+            break;
+        case 43: // store word
+            assignControl(controls, 0, 1, 0, 0, 0, 1, 0, 0, 0);
+            break;
+        case 15: // load upper immediate
+            assignControl(controls, 6, 1, 0, 0, 0, 0, 0, 0, 1);
+            break;    
+        case 4: // branch on equal
+            assignControl(controls, 1, 0, 1, 0, 0, 0, 2, 2, 0);
+            break;
+        case 10: // set less than immediate
+            assignControl(controls, 2, 1, 0, 0, 0, 0, 0, 0, 1 );
+            break;
+        case 11: // set less than immediate (unsigned)
+            assignControl(controls, 3, 1, 0, 0, 0, 0, 0, 0, 1);
+            break;
+        case 2: // jump
+            assignControl(controls, 0, 2, 0, 1, 2, 2, 2, 2, 2);
+            break;
+        default:
+            return 1; // illegal instruction so return halt
+    }
+   
+    return 0;
 }
 
 /* Read Register */
 /* 5 Points */
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-      
+    Reg[r1] = *data1; //  The value at Reg at address r1 is assigned to data1
+    Reg[r2] = *data2; // The value at Reg at address r2 is assigned to data2
 }
 
 
 /* Sign Extend */
 /* 10 Points */
 void sign_extend(unsigned offset,unsigned *extended_value)
-{
-    //int sign = offset & (-offset); // 
+{ 
 
     *extended_value = 0;
 
@@ -126,7 +182,7 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
     char control;
     unsigned val2;
                                            
-         if(funct == 000) control = '0';        // Check what operation based on funct
+    if(funct == 000) control = '0';        // Check what operation based on funct
     else if(funct == 001) control = '1';
     else if(funct == 010) control = '2';
     else if(funct == 011) control = '3';
