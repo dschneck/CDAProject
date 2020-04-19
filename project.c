@@ -147,8 +147,8 @@ int instruction_decode(unsigned op,struct_controls *controls)
 /* 5 Points */
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-    Reg[r1] = *data1; //  The value at Reg at address r1 is assigned to data1
-    Reg[r2] = *data2; // The value at Reg at address r2 is assigned to data2
+    *data1 = Reg[r1]; //  The value at Reg at address r1 is assigned to data1
+    *data2 = Reg[r2]; // The value at Reg at address r2 is assigned to data2
 }
 
 
@@ -181,23 +181,29 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
 {
     char control;
     unsigned val2;
-                                           
-    if(funct == 000) control = '0';        // Check what operation based on funct
-    else if(funct == 001) control = '1';
-    else if(funct == 010) control = '2';
-    else if(funct == 011) control = '3';
-    else if(funct == 100) control = '4';
-    else if(funct == 101) control = '5';
-    else if(funct == 110) control = '6';
-    else if(funct == 111) control = '7';
-    else return 1;                              // Halt, invalid instruction
+    
+    if(ALUOp == '7')
+    {
+        if(funct == 000) control = '0';        // Check what operation based on funct
+        else if(funct == 001) control = '1';
+        else if(funct == 010) control = '2';
+        else if(funct == 011) control = '3';
+        else if(funct == 100) control = '4';
+        else if(funct == 101) control = '5';
+        else if(funct == 110) control = '6';
+        else if(funct == 111) control = '7';
+        else return 1;                          // Halt, invalid instruction
+    }
+    else
+        control = ALUOp;
+                            
     
     
     // Determine what parameters to use
-    if(ALUSrc == 'R')
+    if(ALUSrc == '0')
         val2 = data2;                   // R-Types, pass data2
         
-    else if(ALUSrc == 'I')
+    else if(ALUSrc == '1')
         val2 = extended_value;          // I-Types, pass extended_val
     
     else
@@ -213,7 +219,20 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
 /* 10 Points */
 int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsigned *memdata,unsigned *Mem)
 {
-
+    // Write to memory, ensuring ALUResult is multiple of 4
+    if(MemWrite && (ALUresult % 4 == 0))
+        Mem[ALUresult >> 2] = data2;
+    
+    // Read from memory
+    else if(MemRead && (ALUresult % 4 == 0))
+        *memdata = Mem[ALUresult >> 2];
+    
+    // Halt condition
+    else
+        return 1;
+    
+    // Successful
+    return 0;
 }
 
 
@@ -221,13 +240,41 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 /* 10 Points */
 void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,char RegWrite,char RegDst,char MemtoReg,unsigned *Reg)
 {
-
+    // Write data from memory to register
+    if(RegWrite == '1' && MemtoReg == '1')
+    {
+        if(RegDst)
+            Reg[r3] = memdata;              // Bits 15-11
+        else
+            Reg[r2] = memdata;              // Bits 25-21
+    }
+    
+    // Write data from ALU to result
+    else if(RegWrite == '1' && MemtoReg == '0')
+    {
+        if(RegDst)
+            Reg[r3] = ALUresult;            // Bits 15-11
+        else
+            Reg[r2] = ALUresult;            // Bits 25-21
+    }
+        
 }
 
 /* PC update */
 /* 10 Points */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
-
+    // Retrieve next instructions
+    *PC += 4;
+    
+    // Jump to specified location
+    if(Jump == '1')
+            *PC = (jsec << 2) | (*PC & 0xf0000000);
+    
+    //Add address to extended value
+    if(Branch == '1' && Zero == '1')
+        *PC += (extended_value << 2);
+    
 }
+
 
