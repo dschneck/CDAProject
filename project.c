@@ -1,7 +1,7 @@
 #include "spimcore.h"
 
 // Extra functions
-int addBits(unsigned * byte);
+
 void assignControl(struct_controls *controls, char Aop, char Asrc, char bra, char jum, char memW, char memR, char memTR, char regD, char regW);
 
 /* ALU */
@@ -49,48 +49,29 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
     
 }
 
-int addBits(unsigned  * byte) {
-    int num_bits, sum = 0;
-    num_bits = sizeof(unsigned) * 8;
-
-    for (int i = 0; i < num_bits; i++) {
-        if (*byte & 1 << i) {
-            sum += 2 << i;
-        }
-    }
-
-    return sum;
-}
 
 /* instruction partition */
 /* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
-    // Still WIP
-    unsigned * tmp = &instruction; // Getting the address
+   // Shift right to place the bits at the end of the string
+    *op = (instruction & 0xfc000000) >> 26; // Grabs 6 bits [31-26]
 
-    /* Second attempt, might be right for a few but might be overly complicated */
-    *op = tmp[0] >> 2;
-    *r1 = (tmp[0] << 6) + (tmp[1] >> 5);
-    *r2 = *(tmp + 12);
-    *r3 = *(tmp + 17);
-    *funct = (tmp[3] << 2) >> 2;
-    *offset = (tmp[2] << 8) + tmp[3];
-    *jsec = ( tmp[2])+ tmp[3];
+    *r1 = (instruction & 0x03e00000) >> 21; // Grabs 5 bits [25-21]
+
+    *r2 = (instruction & 0x001f0000) >> 16; // Grabs 5 bits [20-16]
+
+    *r3 = (instruction & 0x0000f800) >> 11; //Grabs 5 bits [15-11]
+
+    *funct = instruction & 0x0000003f; // Grabs 6 bits [5-0]
+
+    *offset = instruction & 0x0000ffff; // Grabs 16 bits [15-0]
     
-
-    /* I think my understanding of the memory representation
-    was wrong
-    op = tmp + 0;
-    r1 = tmp + 7;
-    r2 = tmp + 12;
-    r3 = tmp + 17;
-    funct = tmp + 5;
-    offset = tmp + 17;
-    jsec = tmp + 7;
-    */
+    *jsec = instruction & 0x03ffffff; // Grabs 26 bits [25-0]
 }
 
+// Function that assignes values to Control codes
+// so I don't repeat the code
 void assignControl(struct_controls *controls, char Aop, char Asrc, char bra, char jum, char memR, char memW, char memTR, char regD, char regW) {
     controls->ALUOp = Aop;
     controls->ALUSrc = Asrc;
@@ -160,12 +141,12 @@ void sign_extend(unsigned offset,unsigned *extended_value)
     *extended_value = 0;
 
     if (offset & (1 << 16)) { //checks if the 16th bit is a 1
-        for (int i = 16; i < 32 ; i++) {
-            *extended_value = (offset & (1 << i)); // change leftmost 16 bits to 1
+        for (int i = 15; i < 32 ; i++) {
+            *extended_value = (offset | (1 << i)); // change leftmost 16 bits to 1
         }
         
         for (int i = 0; i < 16; i++) {
-            *extended_value = (offset | (1 << i)); // copy rightmost 16 bits to the values in offset
+            *extended_value = (offset & (1 << i)); // copy rightmost 16 bits to the values in offset
         }
     }
 
