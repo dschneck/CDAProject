@@ -36,7 +36,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
-    if ( Mem[PC] % 4 == 0 && ((PC >> 2) + 31) < (65536 >> 2)) { // Checking if it is word aligned 
+    if ( Mem[PC] % 4 == 0 && ((PC >> 2) + 31) < (65536 >> 2)) { // Checking if it is word aligned
                                                                    // and if new PC goes out of bounds  PC % 4 == 0 for word alignment
         instruction = &(Mem[PC >> 2]); // instruction now points to next instruction word
         return 0;
@@ -67,13 +67,13 @@ int addBits(unsigned  * byte) {
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
     // Still WIP
-    unsigned * tmp = &instruction; // Getting the address 
+    unsigned * tmp = &instruction; // Getting the address
 
     /* Second attempt, might be right for a few but might be overly complicated */
-    *op = tmp[0] >> 2; 
+    *op = tmp[0] >> 2;
     *r1 = (tmp[0] << 6) + (tmp[1] >> 5);
-    *r2 = tmp + 12;
-    *r3 = tmp + 17;
+    *r2 = *(tmp + 12);
+    *r3 = *(tmp + 17);
     *funct = (tmp[3] << 2) >> 2;
     *offset = (tmp[2] << 8) + tmp[3];
     *jsec = ( tmp[2])+ tmp[3];
@@ -108,7 +108,7 @@ void assignControl(struct_controls *controls, char Aop, char Asrc, char bra, cha
 /* 15 Points */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
-    switch(op) { // 
+    switch(op) { //
         case 0: // R-type instruction
             assignControl(controls, 0, 7, 0, 0, 0, 0, 0, 0, 1);
             break;
@@ -123,7 +123,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             break;
         case 15: // load upper immediate
             assignControl(controls, 6, 1, 0, 0, 0, 0, 0, 0, 1);
-            break;    
+            break;
         case 4: // branch on equal
             assignControl(controls, 1, 0, 1, 0, 0, 0, 2, 2, 0);
             break;
@@ -155,7 +155,7 @@ void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigne
 /* Sign Extend */
 /* 10 Points */
 void sign_extend(unsigned offset,unsigned *extended_value)
-{ 
+{
 
     *extended_value = 0;
 
@@ -276,5 +276,3 @@ void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char 
         *PC += (extended_value << 2);
     
 }
-
-
